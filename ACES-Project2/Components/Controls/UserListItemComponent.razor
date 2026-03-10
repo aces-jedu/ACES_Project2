@@ -1,0 +1,21 @@
+﻿@if (this._user is not null)
+{
+    <tr>
+        <td>@_user.FirstName</td>
+        <td>@_user.Email</td>
+        <td>@_user.RoleName</td>
+        <td>
+            <span class="badge @(_user.IsActive == 1 ? "bg-success" : "bg-secondary")">
+                @(_user.IsActive == 1 ? "Online" : "Offline")
+            </span>
+        </td>
+        <td>
+            <button type="button" class="btn btn-primary"> Edit </button>
+        </td>
+    </tr>
+}
+
+@code {
+    [Parameter]
+    public ManageUsers? _user { get; set;  }
+}

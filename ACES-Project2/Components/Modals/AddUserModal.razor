@@ -1,0 +1,45 @@
+﻿@using ACES_Project2.Components.Controls
+@inject IJSRuntime JS
+
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content shadow">
+
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Create New User</h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <RegisterForm OnUserCreated="HandleUserCreated" />
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>
+    /// Opens the modal using Bootstrap JS
+    /// </summary>
+    public async Task OpenAsync()
+    {
+        await JS.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('addUserModal')).show()");
+    }
+
+    /// <summary>
+    /// Closes the modal using Bootstrap JS
+    /// </summary>
+    private async Task Close()
+    {
+        await JS.InvokeVoidAsync("eval", "bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide()");
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleUserCreated()
+    {
+        await Close();
+    }
+}

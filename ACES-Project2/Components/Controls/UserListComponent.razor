@@ -1,0 +1,33 @@
+﻿@inject IViewUsersUseCase ViewUsersUseCase
+
+<table class="table">
+    <thead>
+        <tr
+            <th>First Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (users is not null && users.Count > 0)
+        {
+            @foreach (var user in users)
+            {
+                <UserListItemComponent _user="user"></UserListItemComponent>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+
+    private List<ManageUsers>? users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = (await ViewUsersUseCase.ExecuteAsync()).ToList();
+    }
+
+}

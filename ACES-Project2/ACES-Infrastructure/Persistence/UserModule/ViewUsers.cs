@@ -19,13 +19,24 @@ namespace ACES_Project2.ACES_Infrastructure.Persistence.UserModule
         {
             var users = await userManager.Users.ToListAsync();
 
-            return users.Select(u => new ManageUsers
+            var result = new List<ManageUsers>();
+
+            foreach (var user in users)
             {
-                Id = u.Id,
-                Email = u.Email,
-                UserName = u.UserName,
-                IsActive = u.IsActive
-            }).ToList();
+                var roles = await userManager.GetRolesAsync(user);
+
+                result.Add(new ManageUsers
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    IsActive = user.IsActive,
+                    FirstName = user.FirstName,
+                    RoleName = roles.FirstOrDefault() ?? "No Role"
+                });
+            }
+
+            return result;
         }
     }
 }

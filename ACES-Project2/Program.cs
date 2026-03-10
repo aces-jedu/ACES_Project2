@@ -18,6 +18,7 @@ builder.Services.AddScoped<UserStatus>();
 builder.Services.AddScoped<IUserRepository, ViewUsers>();
 builder.Services.AddScoped<IViewUsersUseCase, ViewUsersUseCase>();
 
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
