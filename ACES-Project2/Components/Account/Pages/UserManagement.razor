@@ -1,0 +1,41 @@
+﻿@page "/ManageUsers"
+@attribute [Authorize(Roles = "Admin")]
+
+@inject IViewUsersUseCase ViewUsersUseCase
+
+<h3>User List</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Username</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in users)
+        {
+            <tr>
+                <td>@user.Email</td>
+                <td>@user.UserName</td>
+                <td>
+                    <span class="badge @(user.IsActive == 1 ? "bg-success" : "bg-secondary")">
+                        @(user.IsActive == 1 ? "Online" : "Offline")
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+
+    List<ManageUsers> users = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await ViewUsersUseCase.ExecuteAsync();
+    }
+
+}
