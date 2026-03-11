@@ -2,8 +2,10 @@ using ACES_Project2.ACES_Infrastructure.Persistence.UserModule;
 using ACES_Project2.ACES_UseCases.Users;
 using ACES_Project2.ACES_UseCases.Users.Interfaces;
 using ACES_Project2.ACES_UseCases.Users.Repositories;
+using ACES_Project2.ACES_UseCases.Users.Services;
 using ACES_Project2.Components;
 using ACES_Project2.Components.Account;
+using ACES_Project2.Components.Hub;
 using ACES_Project2.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -18,6 +20,9 @@ builder.Services.AddScoped<UserStatus>();
 builder.Services.AddScoped<IUserRepository, ViewUsers>();
 builder.Services.AddScoped<IViewUsersUseCase, ViewUsersUseCase>();
 
+// Added SignalR
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IUserStatusNotifier, UserStatusNotifier>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -75,5 +80,8 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+// Added MapHub
+app.MapHub<UserHub>("/userHub");
 
 app.Run();
