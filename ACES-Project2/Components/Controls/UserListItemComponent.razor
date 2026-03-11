@@ -10,12 +10,23 @@
             </span>
         </td>
         <td>
-            <button type="button" class="btn btn-primary"> Edit </button>
+            <button type="button" class="btn btn-primary" @onclick="EditUser"> Edit </button>
         </td>
     </tr>
 }
 
 @code {
     [Parameter]
-    public ManageUsers? _user { get; set;  }
+    public ManageUsers? _user { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnEditUser { get; set; }
+
+    private async Task EditUser()
+    {
+        if (_user != null && !string.IsNullOrEmpty(_user.Id))
+        {
+            await OnEditUser.InvokeAsync(_user.Id);
+        }
+    }
 }

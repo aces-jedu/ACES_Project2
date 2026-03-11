@@ -3,9 +3,6 @@
 @using ACES_Project2.Components.Modals
 @attribute [Authorize(Roles = "Admin")]
 
-@inject IViewUsersUseCase ViewUsersUseCase
-@inject IJSRuntime JS
-
 <h3>User List</h3>
 
 <br />
@@ -14,25 +11,3 @@
 <UserListComponent></UserListComponent>
 
 <br />
-
-<button class="btn btn-primary" @onclick="OpenModal">
-    Add User
-</button>
-
-<AddUserModal @ref="addUserModal" OnClose="CloseModal" />
-
-@code {
-    private AddUserModal addUserModal;
-
-    private async void OpenModal()
-    {
-        // showModal = true; // no longer needed for Bootstrap JS modal
-        await addUserModal.OpenAsync();
-    }
-
-    private void CloseModal()
-    {
-        // You can perform additional actions here after modal closes
-        StateHasChanged();
-    }
-}

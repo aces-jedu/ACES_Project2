@@ -32,6 +32,10 @@ namespace ACES_Project2.ACES_Infrastructure.Persistence.UserModule
                     UserName = user.UserName,
                     IsActive = user.IsActive,
                     FirstName = user.FirstName,
+                    MiddleName = user.MiddleName,
+                    LastName = user.LastName,
+                    Gender = user.Gender,
+                    DateOfBirth = user.DateOfBirth,
                     RoleName = roles.FirstOrDefault() ?? "No Role"
                 });
             }

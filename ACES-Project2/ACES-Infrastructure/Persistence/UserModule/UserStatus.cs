@@ -6,11 +6,11 @@ namespace ACES_Project2.ACES_Infrastructure.Persistence.UserModule
 {
     public class UserStatus
     {
-        private readonly UserManager<ApplicationUser> UserModule;
+        private readonly UserManager<ApplicationUser> Userstatus;
 
         public UserStatus(UserManager<ApplicationUser> userManager)
         {
-            UserModule = userManager;
+            Userstatus = userManager;
         }
 
         // Set Active (1)
@@ -19,7 +19,7 @@ namespace ACES_Project2.ACES_Infrastructure.Persistence.UserModule
             if (string.IsNullOrWhiteSpace(email))
                 return;
 
-            var user = await UserModule.FindByEmailAsync(email);
+            var user = await Userstatus.FindByEmailAsync(email);
 
             if (user is null)
                 return;
@@ -35,7 +35,7 @@ namespace ACES_Project2.ACES_Infrastructure.Persistence.UserModule
                     user.LoginAt = DateTime.Now;
                 }
 
-                await UserModule.UpdateAsync(user);
+                await Userstatus.UpdateAsync(user);
             }
             else
             {
@@ -43,14 +43,14 @@ namespace ACES_Project2.ACES_Infrastructure.Persistence.UserModule
                 // user.IsActive == 1 AND user.LoginAt.HasValue == true AND user.LoginAt.Value.Date == DateTime.Now.Date
                 user.IsActive = 1;
                 // Don't update LoginAt since it's already today
-                await UserModule.UpdateAsync(user);
+                await Userstatus.UpdateAsync(user);
             }
         }
 
         // Set Inactive (0)
         public async Task SetUserInactiveAsync(ClaimsPrincipal principal)
         {
-            var user = await UserModule.GetUserAsync(principal);
+            var user = await Userstatus.GetUserAsync(principal);
 
             if (user is null)
                 return;
@@ -59,7 +59,7 @@ namespace ACES_Project2.ACES_Infrastructure.Persistence.UserModule
             {
                 user.IsActive = 0;
                 user.LogoutAt = DateTime.Now;
-                await UserModule.UpdateAsync(user);
+                await Userstatus.UpdateAsync(user);
             }
         }
     }
