@@ -1,65 +1,85 @@
 ﻿using ACES_Project2.Data;
+using ACES_Project2.ACES_UseCases.Users.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 
 namespace ACES_Project2.ACES_Infrastructure.Persistence.UserModule
 {
     public class UserStatus
     {
-        private readonly UserManager<ApplicationUser> Userstatus;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IUserStatusNotifier _notifier;
 
-        public UserStatus(UserManager<ApplicationUser> userManager)
+        public UserStatus(IServiceScopeFactory scopeFactory, IUserStatusNotifier notifier)
         {
-            Userstatus = userManager;
+            _scopeFactory = scopeFactory;
+            _notifier = notifier;
         }
 
-        // Set Active (1)
+        /// <summary>
+        /// Set user as active (1) by email.
+        /// Automatically updates LoginAt if not today.
+        /// Safe to call from SignalR callbacks.
+        /// </summary>
         public async Task SetUserActiveAsync(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
                 return;
 
-            var user = await Userstatus.FindByEmailAsync(email);
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
+            var user = await userManager.FindByEmailAsync(email);
             if (user is null)
                 return;
 
-            // Check if LoginAt needs to be updated (only once per day)
-            if (user.IsActive != 1 || !user.LoginAt.HasValue || user.LoginAt.Value.Date != DateTime.Now.Date)
+            bool shouldUpdateLoginAt =
+                !user.LoginAt.HasValue ||
+                user.LoginAt.Value.Date != DateTime.UtcNow.Date;
+
+            if (user.IsActive != 1 || shouldUpdateLoginAt)
             {
                 user.IsActive = 1;
 
-                // Only update LoginAt if it's null OR the last login was not today
-                if (!user.LoginAt.HasValue || user.LoginAt.Value.Date != DateTime.Now.Date)
+                if (shouldUpdateLoginAt)
                 {
-                    user.LoginAt = DateTime.Now;
+                    user.LoginAt = DateTime.UtcNow;
                 }
 
-                await Userstatus.UpdateAsync(user);
-            }
-            else
-            {
-                // This case only executes when:
-                // user.IsActive == 1 AND user.LoginAt.HasValue == true AND user.LoginAt.Value.Date == DateTime.Now.Date
-                user.IsActive = 1;
-                // Don't update LoginAt since it's already today
-                await Userstatus.UpdateAsync(user);
+                await userManager.UpdateAsync(user);
+
+                // Notify SignalR clients
+                await _notifier.NotifyUsersUpdated();
             }
         }
 
-        // Set Inactive (0)
+        /// <summary>
+        /// Set user as inactive (0) based on ClaimsPrincipal.
+        /// Updates LogoutAt.
+        /// Safe to call from SignalR callbacks.
+        /// </summary>
         public async Task SetUserInactiveAsync(ClaimsPrincipal principal)
         {
-            var user = await Userstatus.GetUserAsync(principal);
+            if (principal == null)
+                return;
 
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            var user = await userManager.GetUserAsync(principal);
             if (user is null)
                 return;
 
             if (user.IsActive != 0)
             {
                 user.IsActive = 0;
-                user.LogoutAt = DateTime.Now;
-                await Userstatus.UpdateAsync(user);
+                user.LogoutAt = DateTime.UtcNow;
+
+                await userManager.UpdateAsync(user);
+
+                // Notify SignalR clients
+                await _notifier.NotifyUsersUpdated();
             }
         }
     }

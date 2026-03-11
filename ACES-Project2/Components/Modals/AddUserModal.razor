@@ -106,12 +106,12 @@
 
     private async Task OpenAsync()
     {
-        await JS.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('addUserModal')).show()");
+        await JS.InvokeVoidAsync("modalHelper.show", "addUserModal");
     }
 
     private async Task Close()
     {
-        await JS.InvokeVoidAsync("eval", "bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide()");
+        await JS.InvokeVoidAsync("modalHelper.hide", "addUserModal");
         UserToEdit = null;
         IsEditMode = false;
         IsLoading = false;
