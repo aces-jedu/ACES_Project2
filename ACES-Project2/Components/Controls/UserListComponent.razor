@@ -2,7 +2,7 @@
 
 <table class="table">
     <thead>
-        <tr
+        <tr>
             <th>First Name</th>
             <th>Email</th>
             <th>Role</th>
@@ -15,19 +15,46 @@
         {
             @foreach (var user in users)
             {
-                <UserListItemComponent _user="user"></UserListItemComponent>
+                <UserListItemComponent _user="user"
+                                       OnEditUser="OpenModalForEdit" />
             }
         }
     </tbody>
 </table>
 
-@code {
+<button class="btn btn-primary" @onclick="OpenModalForCreate">
+    Add User
+</button>
 
+<AddUserModal @ref="addUserModal" OnClose="RefreshUserList" />
+
+@code {
     private List<ManageUsers>? users;
+    private AddUserModal addUserModal;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
     {
         users = (await ViewUsersUseCase.ExecuteAsync()).ToList();
     }
 
+    private async Task OpenModalForCreate()
+    {
+        await addUserModal.OpenForCreateAsync();
+    }
+
+    private async Task OpenModalForEdit(string userId)
+    {
+        await addUserModal.OpenForEditAsync(userId);
+    }
+
+    private async void RefreshUserList()
+    {
+        await LoadUsers();
+        StateHasChanged();
+    }
 }
