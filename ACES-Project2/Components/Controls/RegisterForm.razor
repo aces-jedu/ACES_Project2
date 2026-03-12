@@ -167,33 +167,29 @@
         }
     }
 
+    @* Add this parameter to RegisterForm.razor *@
+    [Parameter] public EventCallback<string> OnError { get; set; }
+
+    @* Update the error handling in RegisterUser and UpdateUser methods *@
+
     private async Task RegisterUser()
     {
         // Manual validation for password in register mode
         if (string.IsNullOrWhiteSpace(Input.Password))
         {
-            identityErrors = new[]
-            {
-            new IdentityError { Description = "Password is required." }
-        };
+            await OnError.InvokeAsync("Password is required.");
             return;
         }
 
         if (Input.Password.Length < 6)
         {
-            identityErrors = new[]
-            {
-            new IdentityError { Description = "Password must be at least 6 characters." }
-        };
+            await OnError.InvokeAsync("Password must be at least 6 characters.");
             return;
         }
 
         if (Input.Password != Input.ConfirmPassword)
         {
-            identityErrors = new[]
-            {
-            new IdentityError { Description = "Passwords do not match." }
-        };
+            await OnError.InvokeAsync("Passwords do not match.");
             return;
         }
 
@@ -207,27 +203,18 @@
             Email = Input.Email,
             UserName = Input.Email,
             CreatedAt = DateTime.Now,
-            IsActive = 0
+            IsActive = 0,
+            EmailConfirmed = true
         };
 
         var result = await UserManager.CreateAsync(user, Input.Password);
 
         if (!result.Succeeded)
         {
-            identityErrors = result.Errors;
+            var errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+            await OnError.InvokeAsync(errorMessage);
             return;
         }
-
-        // Generate email confirmation link if needed
-        var userId = await UserManager.GetUserIdAsync(user);
-        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
-        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
-            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
-            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
-
-        await EmailSender.SendConfirmationLinkAsync(user, user.Email, HtmlEncoder.Default.Encode(callbackUrl));
 
         // Ensure role exists
         if (!await RoleManager.RoleExistsAsync(Input.Role))
@@ -238,10 +225,6 @@
         await UserManager.AddToRoleAsync(user, Input.Role);
 
         Logger.LogInformation("New user created successfully.");
-
-        // Optionally sign in the user
-        // await SignInManagers.SignInAsync(user, isPersistent: false);
-
         await OnUserCreated.InvokeAsync();
     }
 
@@ -251,7 +234,7 @@
 
         if (user == null)
         {
-            identityErrors = new[] { new IdentityError { Description = "User not found." } };
+            await OnError.InvokeAsync("User not found.");
             return;
         }
 
@@ -265,7 +248,8 @@
 
         if (!result.Succeeded)
         {
-            identityErrors = result.Errors;
+            var errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+            await OnError.InvokeAsync(errorMessage);
             return;
         }
 

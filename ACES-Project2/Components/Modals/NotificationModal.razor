@@ -1,0 +1,75 @@
+﻿@* NotificationModal.razor *@
+<div class="modal fade" id="@ModalId" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <div class="@(Type == NotificationType.Success ? "success-animation" : "error-animation")">
+                        @if (Type == NotificationType.Success)
+                        {
+                            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                                <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                                <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg class="checkmark error-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                                <circle class="checkmark__circle error-mark__circle" cx="26" cy="26" r="25" fill="none" />
+                                <path class="checkmark__check error-mark__line" fill="none" d="M16 16 L36 36" />
+                                <path class="checkmark__check error-mark__line" fill="none" d="M36 16 L16 36" />
+                            </svg>
+                        }
+                    </div>
+                </div>
+                <h4 class="mb-3 @(Type == NotificationType.Success ? "text-success" : "text-danger")">@Title</h4>
+                <p class="text-muted mb-4">@Message</p>
+                <button type="button" class="btn @(Type == NotificationType.Success ? "btn-success" : "btn-danger") px-4" @onclick="CloseModal">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Define the enum here
+    public enum NotificationType
+    {
+        Success,
+        Error
+    }
+
+    [Parameter] public string ModalId { get; set; } = "notificationModal";
+    [Parameter] public string Title { get; set; } = "Notification";
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public NotificationType Type { get; set; } = NotificationType.Success;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [Inject] private IJSRuntime JS { get; set; }
+
+    private async Task CloseModal()
+    {
+        await JS.InvokeVoidAsync("modalHelper.hide", ModalId);
+        await OnClose.InvokeAsync();
+    }
+
+    public async Task ShowAsync(string title, string message, NotificationType type)
+    {
+        Title = title;
+        Message = message;
+        Type = type;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("modalHelper.show", ModalId);
+    }
+
+    public async Task ShowSuccessAsync(string message)
+    {
+        await ShowAsync("Success!", message, NotificationType.Success);
+    }
+
+    public async Task ShowErrorAsync(string message)
+    {
+        await ShowAsync("Error!", message, NotificationType.Error);
+    }
+}
