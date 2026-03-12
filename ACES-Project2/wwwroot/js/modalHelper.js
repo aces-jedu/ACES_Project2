@@ -5,6 +5,8 @@
     },
     hide: function (id) {
         var modal = bootstrap.Modal.getInstance(document.getElementById(id));
-        if (modal) modal.hide();
+        if (modal) {
+            modal.hide();
+        }
     }
 };
