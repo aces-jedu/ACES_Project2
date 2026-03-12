@@ -14,6 +14,7 @@ namespace ACES_Project2.Data
         public DateTime? LoginAt { get; set; }
         public DateTime? LogoutAt { get; set; }
         public int IsActive { get; set; } = 0;
+        public bool EmailConfirmed { get; set; }
     }
 
 }

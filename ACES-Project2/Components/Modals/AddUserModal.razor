@@ -35,8 +35,12 @@
     </div>
 </div>
 
+@* Single Notification Modal for both Success and Error *@
+<NotificationModal @ref="notificationModal" ModalId="userNotificationModal" />
+
 @code {
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnUserOperationComplete { get; set; }
 
     private ManageUsers? UserToEdit { get; set; }
     private bool IsEditMode { get; set; }
@@ -44,6 +48,8 @@
     private string? UserIdToEdit { get; set; }
     private string ModalTitle => IsEditMode ? "Edit User" : "Create New User";
     private int RefreshKey { get; set; }
+
+    private NotificationModal? notificationModal;
 
     /// <summary>
     /// Opens the modal for creating a new user
@@ -122,10 +128,35 @@
     private async Task HandleUserCreated()
     {
         await Close();
+
+        // Show success message for user creation
+        if (notificationModal != null)
+        {
+            await notificationModal.ShowSuccessAsync("User has been successfully created.");
+        }
+
+        await OnUserOperationComplete.InvokeAsync();
     }
 
     private async Task HandleUserUpdated()
     {
         await Close();
+
+        // Show success message for user update
+        if (notificationModal != null)
+        {
+            await notificationModal.ShowSuccessAsync("User has been successfully updated.");
+        }
+
+        await OnUserOperationComplete.InvokeAsync();
+    }
+
+    private async Task HandleError(string errorMessage)
+    {
+        // Show error message
+        if (notificationModal != null)
+        {
+            await notificationModal.ShowErrorAsync(errorMessage);
+        }
     }
 }
