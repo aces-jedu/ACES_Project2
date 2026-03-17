@@ -1,3 +1,184 @@
+<div class="container-fluid">
+
+    <!-- FILTERS -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text"
+                       class="form-control"
+                       placeholder="Search by name or email..."
+                       @bind="searchTerm"
+                       @bind:event="oninput"
+                       @bind:after="DebounceSearch" />
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <button class="btn btn-outline-secondary"
+                            type="button"
+                            @onclick="ClearSearch">
+                        <i class="bi bi-x"></i>
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <select class="form-select" @onchange="OnRoleFilterChange">
+                <option value="">All Roles</option>
+                @foreach (var role in availableRoles)
+                {
+                    <option value="@role">@role</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <select class="form-select" @onchange="OnStatusFilterChange">
+                <option value="">All Status</option>
+                <option value="1">Online</option>
+                <option value="0">Offline</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+                <div>
+                    <span class="text-muted">
+                        Showing @pagedUsers.Count of @filteredUsers.Count filtered users
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <!-- PAGE SIZE -->
+                    <div class="d-flex align-items-center gap-2">
+                        <span>Show</span>
+                        <select class="form-select form-select-sm"
+                                style="width:80px;"
+                                @onchange="OnPageSizeChanged">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                        <span>entries</span>
+                    </div>
+
+                    <button class="btn btn-primary" @onclick="OpenModalForCreate">
+                        <i class="bi bi-person-plus"></i> Add User
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th @onclick="@(() => SortBy("FirstName"))" style="cursor:pointer;">
+                        First Name
+                        @if (sortColumn == "FirstName")
+                        {
+                            <i class="bi bi-arrow-@(sortAscending ? "up" : "down")"></i>
+                        }
+                    </th>
+                    <th @onclick="@(() => SortBy("Email"))" style="cursor:pointer;">
+                        Email
+                        @if (sortColumn == "Email")
+                        {
+                            <i class="bi bi-arrow-@(sortAscending ? "up" : "down")"></i>
+                        }
+                    </th>
+                    <th @onclick="@(() => SortBy("RoleName"))" style="cursor:pointer;">
+                        Role
+                        @if (sortColumn == "RoleName")
+                        {
+                            <i class="bi bi-arrow-@(sortAscending ? "up" : "down")"></i>
+                        }
+                    </th>
+                    <th @onclick="@(() => SortBy("IsActive"))" style="cursor:pointer;">
+                        Status
+                        @if (sortColumn == "IsActive")
+                        {
+                            <i class="bi bi-arrow-@(sortAscending ? "up" : "down")"></i>
+                        }
+                    </th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (pagedUsers.Count > 0)
+                {
+                    @foreach (var user in pagedUsers)
+                    {
+                        <UserListItemComponent _user="user"
+                                               OnEditUser="OpenModalForEdit" />
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            @if (isSearching)
+                            {
+                                <span>Searching...</span>
+                            }
+                            else
+                            {
+                                <span>No users found.</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGINATION -->
+    @if (totalPages > 1)
+    {
+        <nav>
+            <ul class="pagination justify-content-center">
+
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="PreviousPage">
+                        Previous
+                    </button>
+                </li>
+
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(currentPage == i ? "active" : "")">
+                        <button class="page-link"
+                                @onclick="(() => GoToPage(i))">
+                            @i
+                        </button>
+                    </li>
+                }
+
+                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="NextPage">
+                        Next
+                    </button>
+                </li>
+
+            </ul>
+        </nav>
+    }
+
+</div>
+
+<AddUserModal @ref="addUserModal" OnClose="RefreshUserList" />
+
 ﻿@using Microsoft.AspNetCore.SignalR.Client
 @inject IViewUsersUseCase ViewUsersUseCase
 @inject NavigationManager Navigation
@@ -243,6 +424,18 @@
     {
         users = (await ViewUsersUseCase.ExecuteAsync()).ToList();
         ApplyFilters();
+    }
+
+    private async Task LoadRoles()
+    {
+        if (users != null)
+        {
+            availableRoles = users
+                .Select(u => u.RoleName)
+                .Where(r => !string.IsNullOrEmpty(r))
+                .Distinct()
+                .ToList();
+        }
     }
 
     private async Task LoadRoles()
