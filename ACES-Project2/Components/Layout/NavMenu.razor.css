@@ -117,8 +117,6 @@
     display: block;
 }
 
-<<<<<<< Updated upstream
-=======
 /* Align icon + text */
 .nav-item ::deep .nav-link {
     display: flex;
@@ -127,21 +125,12 @@
     white-space: nowrap;
 }
 
->>>>>>> Stashed changes
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;
     }
 
     .nav-scrollable {
-<<<<<<< Updated upstream
-        /* Never collapse the sidebar for wide screens */
-        display: block;
-
-        /* Allow sidebar to scroll for tall menus */
-        height: calc(100vh - 3.5rem);
-        overflow-y: auto;
-=======
         display: block !important;
     }
 
@@ -180,6 +169,81 @@
 
     .nav-item ::deep .nav-link span:not(.bi) {
         display: inline-block;
->>>>>>> Stashed changes
+    }
+}
+
+/* Align icon + text */
+.nav-item ::deep .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    white-space: nowrap;
+}
+
+/* Default collapsed text hidden */
+/* Keep your existing styles until the media query */
+
+@media (min-width: 641px) {
+    .navbar-toggler {
+        display: none;
+    }
+
+    .nav-scrollable {
+        /* Never collapse the sidebar for wide screens - but we'll handle this differently */
+        display: block !important; /* Force display on desktop regardless of checkbox state */
+    }
+
+    /* COLLAPSED SIDEBAR - MODIFIED */
+    .sidebar {
+        width: 68px; /* Only icons */
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        transition: width 0.3s ease;
+        overflow: hidden; /* Changed from overflow-x: hidden to just overflow */
+    }
+
+        /* EXPAND ON HOVER */
+        .sidebar:hover {
+            width: 250px;
+        }
+
+        /* Hide text by default in collapsed state */
+        .sidebar:not(:hover) .nav-item ::deep .nav-link span:not(.bi) {
+            display: none;
+        }
+
+        /* Show text on hover */
+        .sidebar:hover .nav-item ::deep .nav-link span:not(.bi) {
+            display: inline-block;
+        }
+
+        /* Ensure icons are always visible */
+        .sidebar .nav-item ::deep .nav-link .bi {
+            display: inline-block;
+            margin-right: 0.75rem;
+            min-width: 1.25rem;
+        }
+
+        /* Adjust nav items for collapsed state */
+        .sidebar:not(:hover) .nav-item ::deep .nav-link {
+            justify-content: flex-start;
+            padding: 0 1rem;
+        }
+}
+
+/* Mobile styles - keep as is */
+@media (max-width: 640.98px) {
+    .nav-scrollable {
+        display: none;
+    }
+
+    .navbar-toggler:checked ~ .nav-scrollable {
+        display: block;
+    }
+
+    /* Ensure text is always visible on mobile when menu is open */
+    .nav-item ::deep .nav-link span:not(.bi) {
+        display: inline-block;
     }
 }

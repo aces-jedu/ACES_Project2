@@ -10,7 +10,7 @@
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" @bind="isMenuOpen" />
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
@@ -48,11 +48,11 @@
                     </NavLink>
                 </div> *@
 
-                <div class="nav-item px-3">
+                @* <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Register">
                         <span class="bi bi-person-plus-nav-menu" aria-hidden="true"></span> Register
                     </NavLink>
-                </div>
+                </div> *@
 
                 <div class="nav-item px-3">
                     <form action="Account/Logout" method="post">
@@ -133,16 +133,24 @@
 
 @code {
     private string? currentUrl;
+    private bool isMenuOpen = false;
 
     protected override void OnInitialized()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
+
+        // Close mobile menu when navigating
+        isMenuOpen = false;
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+
+        // Close mobile menu on navigation
+        isMenuOpen = false;
+
         StateHasChanged();
     }
 

@@ -1,0 +1,102 @@
+﻿/* Notification Modal Animations */
+.success-animation, .error-animation {
+    margin: 0 auto;
+}
+
+.checkmark {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: block;
+    stroke-width: 2;
+    stroke-miterlimit: 10;
+    animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+    position: relative;
+    margin: 0 auto;
+}
+
+.checkmark__circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    stroke-width: 2;
+    stroke-miterlimit: 10;
+    fill: #fff;
+    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark__check {
+    transform-origin: 50% 50%;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+/* Success specific styles */
+.success-animation .checkmark {
+    stroke: #28a745;
+    box-shadow: inset 0px 0px 0px #28a745;
+}
+
+.success-animation .checkmark__circle {
+    stroke: #28a745;
+}
+
+/* Error specific styles */
+.error-animation .checkmark {
+    stroke: #dc3545;
+    box-shadow: inset 0px 0px 0px #dc3545;
+}
+
+.error-animation .checkmark__circle {
+    stroke: #dc3545;
+}
+
+.error-animation .checkmark__check {
+    stroke: #dc3545;
+}
+
+.error-mark__line {
+    transform-origin: 50% 50%;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+}
+
+.error-animation .checkmark__check:first-of-type {
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+.error-animation .checkmark__check:last-of-type {
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.9s forwards;
+}
+
+@keyframes stroke {
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes scale {
+    0%, 100% {
+        transform: none;
+    }
+
+    50% {
+        transform: scale3d(1.1, 1.1, 1);
+    }
+}
+
+@keyframes fill {
+    100% {
+        box-shadow: inset 0px 0px 0px 30px currentColor;
+    }
+}
+
+/* For success, the fill color will be green */
+.success-animation .checkmark {
+    color: #28a745;
+}
+
+/* For error, the fill color will be red */
+.error-animation .checkmark {
+    color: #dc3545;
+}

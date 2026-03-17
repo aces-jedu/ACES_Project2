@@ -3,25 +3,36 @@
     <tr>
         <td>@_user.FirstName</td>
         <td>@_user.Email</td>
-<<<<<<< Updated upstream
-        <td>@_user.RoleName</td>
-=======
         <td>
             <span class="badge bg-info text-dark">@_user.RoleName</span>
         </td>
->>>>>>> Stashed changes
         <td>
             <span class="badge @(_user.IsActive == 1 ? "bg-success" : "bg-secondary")">
                 @(_user.IsActive == 1 ? "Online" : "Offline")
             </span>
         </td>
         <td>
-            <button type="button" class="btn btn-primary"> Edit </button>
+            <button type="button"
+                    class="btn btn-sm btn-primary"
+                    @onclick="EditUser">
+                <i class="bi bi-pencil"></i> Edit
+            </button>
         </td>
     </tr>
 }
 
 @code {
     [Parameter]
-    public ManageUsers? _user { get; set;  }
+    public ManageUsers? _user { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnEditUser { get; set; }
+
+    private async Task EditUser()
+    {
+        if (_user != null && !string.IsNullOrEmpty(_user.Id))
+        {
+            await OnEditUser.InvokeAsync(_user.Id);
+        }
+    }
 }

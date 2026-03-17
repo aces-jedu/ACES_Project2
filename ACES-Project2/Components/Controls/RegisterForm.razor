@@ -20,7 +20,7 @@
     <div class="alert alert-danger">@Message</div>
 }
 
-<EditForm Model="Input" OnValidSubmit="RegisterUser">
+<EditForm Model="Input" OnValidSubmit="HandleSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary class="text-danger" />
 
@@ -49,8 +49,8 @@
     <div class="form-floating mb-3">
         <InputSelect @bind-Value="Input.Gender" class="form-control">
             <option value="">Select Gender</option>
-            <option>Male</option>
-            <option>Female</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
         </InputSelect>
         <label>Gender</label>
     </div>
@@ -70,30 +70,49 @@
     </div>
 
     <div class="form-floating mb-3">
-        <InputText @bind-Value="Input.Email" class="form-control" placeholder="Email" />
+        <InputText @bind-Value="Input.Email" class="form-control" placeholder="Email"
+                   disabled="@IsEditMode" />
         <label>Email</label>
     </div>
 
-    <div class="form-floating mb-3">
-        <InputText type="password" @bind-Value="Input.Password" class="form-control" placeholder="Password" />
-        <label>Password</label>
-    </div>
+    @if (!IsEditMode)
+    {
+        <div class="form-floating mb-3">
+            <InputText type="password" @bind-Value="Input.Password" class="form-control" placeholder="Password" />
+            <label>Password</label>
+        </div>
 
-    <div class="form-floating mb-3">
-        <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" placeholder="Confirm Password" />
-        <label>Confirm Password</label>
-    </div>
+        <div class="form-floating mb-3">
+            <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" placeholder="Confirm Password" />
+            <label>Confirm Password</label>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info mb-3">
+            <small>Password cannot be changed through this form. Use password reset functionality if needed.</small>
+        </div>
+    }
 
-    <button type="submit" class="btn btn-primary w-100">
-        Register
+    <button type="submit" class="btn btn-primary w-100" disabled="@IsSubmitting">
+        @if (IsSubmitting)
+        {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        }
+        @SubmitButtonText
     </button>
 </EditForm>
 
 @code {
-
     [Parameter] public EventCallback OnUserCreated { get; set; }
+    [Parameter] public EventCallback OnUserUpdated { get; set; }
+    [Parameter] public ManageUsers? UserToEdit { get; set; }
+    [Parameter] public bool IsEditMode { get; set; }
+    [Parameter] public int Key { get; set; }
 
     private IEnumerable<IdentityError>? identityErrors;
+    private bool IsSubmitting { get; set; }
+    private string SubmitButtonText => IsEditMode ? "Update" : "Register";
 
     private InputModel Input { get; set; } = new();
 
@@ -101,9 +120,78 @@
         identityErrors is null ? null :
         $"Error: {string.Join(", ", identityErrors.Select(e => e.Description))}";
 
+    protected override void OnParametersSet()
+    {
+        if (IsEditMode && UserToEdit != null)
+        {
+            Input = new InputModel
+            {
+                IsEditMode = true,
+                FirstName = UserToEdit.FirstName ?? "",
+                MiddleName = UserToEdit.MiddleName ?? "",
+                LastName = UserToEdit.LastName ?? "",
+                DateOfBirth = UserToEdit.DateOfBirth,
+                Gender = UserToEdit.Gender ?? "",
+                Email = UserToEdit.Email ?? "",
+                Role = UserToEdit.RoleName ?? ""
+            };
+        }
+        else
+        {
+            Input = new InputModel
+            {
+                IsEditMode = false
+            };
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        IsSubmitting = true;
+        identityErrors = null;
+
+        try
+        {
+            if (IsEditMode)
+            {
+                await UpdateUser();
+            }
+            else
+            {
+                await RegisterUser();
+            }
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    @* Add this parameter to RegisterForm.razor *@
+    [Parameter] public EventCallback<string> OnError { get; set; }
+
+    @* Update the error handling in RegisterUser and UpdateUser methods *@
+
     private async Task RegisterUser()
     {
-        identityErrors = null;
+        // Manual validation for password in register mode
+        if (string.IsNullOrWhiteSpace(Input.Password))
+        {
+            await OnError.InvokeAsync("Password is required.");
+            return;
+        }
+
+        if (Input.Password.Length < 6)
+        {
+            await OnError.InvokeAsync("Password must be at least 6 characters.");
+            return;
+        }
+
+        if (Input.Password != Input.ConfirmPassword)
+        {
+            await OnError.InvokeAsync("Passwords do not match.");
+            return;
+        }
 
         var user = new ApplicationUser
         {
@@ -115,14 +203,16 @@
             Email = Input.Email,
             UserName = Input.Email,
             CreatedAt = DateTime.Now,
-            IsActive = 0
+            IsActive = 0,
+            EmailConfirmed = true
         };
 
         var result = await UserManager.CreateAsync(user, Input.Password);
 
         if (!result.Succeeded)
         {
-            identityErrors = result.Errors;
+            var errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+            await OnError.InvokeAsync(errorMessage);
             return;
         }
 
@@ -135,16 +225,49 @@
         await UserManager.AddToRoleAsync(user, Input.Role);
 
         Logger.LogInformation("New user created successfully.");
-
-        // Clear form
-        Input = new InputModel();
-
-        // Close modal
         await OnUserCreated.InvokeAsync();
     }
 
-    private sealed class InputModel
+    private async Task UpdateUser()
     {
+        var user = await UserManager.FindByEmailAsync(Input.Email);
+
+        if (user == null)
+        {
+            await OnError.InvokeAsync("User not found.");
+            return;
+        }
+
+        user.FirstName = Input.FirstName;
+        user.MiddleName = Input.MiddleName;
+        user.LastName = Input.LastName;
+        user.DateOfBirth = Input.DateOfBirth;
+        user.Gender = Input.Gender;
+
+        var result = await UserManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+        {
+            var errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+            await OnError.InvokeAsync(errorMessage);
+            return;
+        }
+
+        var currentRoles = await UserManager.GetRolesAsync(user);
+        if (!currentRoles.Contains(Input.Role))
+        {
+            await UserManager.RemoveFromRolesAsync(user, currentRoles);
+            await UserManager.AddToRoleAsync(user, Input.Role);
+        }
+
+        Logger.LogInformation("User updated successfully.");
+        await OnUserUpdated.InvokeAsync();
+    }
+
+    private sealed class InputModel : IValidatableObject
+    {
+        public bool IsEditMode { get; set; }
+
         [Required]
         public string FirstName { get; set; } = "";
 
@@ -153,8 +276,10 @@
         [Required]
         public string LastName { get; set; } = "";
 
+        [Required]
         public DateTime? DateOfBirth { get; set; }
 
+        [Required]
         public string? Gender { get; set; }
 
         [Required]
@@ -164,11 +289,34 @@
         [EmailAddress]
         public string Email { get; set; } = "";
 
-        [Required]
-        [StringLength(100, MinimumLength = 6)]
-        public string Password { get; set; } = "";
+        public string? Password { get; set; }
 
-        [Compare("Password", ErrorMessage = "Passwords do not match.")]
-        public string ConfirmPassword { get; set; } = "";
+        public string? ConfirmPassword { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (!IsEditMode)
+            {
+                if (string.IsNullOrWhiteSpace(Password))
+                {
+                    yield return new ValidationResult(
+                        "Password is required.",
+                        new[] { nameof(Password) });
+                }
+                else if (Password.Length < 6)
+                {
+                    yield return new ValidationResult(
+                        "Password must be at least 6 characters.",
+                        new[] { nameof(Password) });
+                }
+
+                if (Password != ConfirmPassword)
+                {
+                    yield return new ValidationResult(
+                        "Passwords do not match.",
+                        new[] { nameof(ConfirmPassword) });
+                }
+            }
+        }
     }
 }

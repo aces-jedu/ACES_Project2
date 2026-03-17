@@ -11,6 +11,27 @@ main {
 
 .sidebar {
     background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+    position: relative;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Add a subtle gradient overlay for depth */
+.sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.sidebar:hover::after {
+    opacity: 1;
 }
 
 .top-row {
@@ -57,28 +78,23 @@ main {
         flex-direction: row;
     }
 
-<<<<<<< Updated upstream
+    /* COLLAPSED SIDEBAR - MainLayout controls the width */
     .sidebar {
-        width: 250px;
+        width: 68px; /* Only icons */
         height: 100vh;
         position: sticky;
         top: 0;
+        overflow: hidden;
     }
 
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
+        /* EXPAND ON HOVER */
+        .sidebar:hover {
+            width: 250px;
+            box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+        }
 
-    .top-row.auth ::deep a:first-child {
+    main {
         flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-=======
     /* COLLAPSED SIDEBAR */
     .sidebar {
         width: 10px; /* collapsed width */
@@ -110,7 +126,6 @@ main {
 
     .top-row,
     article {
->>>>>>> Stashed changes
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
     }

@@ -1,45 +1,162 @@
 ﻿@using ACES_Project2.Components.Controls
 @inject IJSRuntime JS
+@inject IViewUsersUseCase ViewUsersUseCase
 
 <div class="modal fade" id="addUserModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content shadow">
 
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Create New User</h5>
+                <h5 class="modal-title">@ModalTitle</h5>
                 <button type="button" class="btn-close btn-close-white" @onclick="Close"></button>
             </div>
 
             <div class="modal-body">
-                <RegisterForm OnUserCreated="HandleUserCreated" />
+                @if (IsEditMode && IsLoading)
+                {
+                    <div class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading user details...</p>
+                    </div>
+                }
+                else
+                {
+                    <RegisterForm UserToEdit="UserToEdit"
+                                  IsEditMode="IsEditMode"
+                                  OnUserCreated="HandleUserCreated"
+                                  OnUserUpdated="HandleUserUpdated"
+                                  Key="@RefreshKey" />
+                }
             </div>
 
         </div>
     </div>
 </div>
 
+@* Single Notification Modal for both Success and Error *@
+<NotificationModal @ref="notificationModal" ModalId="userNotificationModal" />
+
 @code {
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnUserOperationComplete { get; set; }
+
+    private ManageUsers? UserToEdit { get; set; }
+    private bool IsEditMode { get; set; }
+    private bool IsLoading { get; set; }
+    private string? UserIdToEdit { get; set; }
+    private string ModalTitle => IsEditMode ? "Edit User" : "Create New User";
+    private int RefreshKey { get; set; }
+
+    private NotificationModal? notificationModal;
 
     /// <summary>
-    /// Opens the modal using Bootstrap JS
+    /// Opens the modal for creating a new user
     /// </summary>
-    public async Task OpenAsync()
+    public async Task OpenForCreateAsync()
     {
-        await JS.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('addUserModal')).show()");
+        UserToEdit = null;
+        IsEditMode = false;
+        IsLoading = false;
+        UserIdToEdit = null;
+        RefreshKey++;
+        await OpenAsync();
     }
 
     /// <summary>
-    /// Closes the modal using Bootstrap JS
+    /// Opens the modal for editing an existing user
     /// </summary>
+    public async Task OpenForEditAsync(string userId)
+    {
+        IsEditMode = true;
+        IsLoading = true;
+        UserToEdit = null;
+        UserIdToEdit = userId;
+        RefreshKey++;
+
+        await OpenAsync();
+        await LoadUserDetails();
+    }
+
+    private async Task LoadUserDetails()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(UserIdToEdit))
+            {
+                // Fetch all users and find the one with matching ID
+                var allUsers = await ViewUsersUseCase.ExecuteAsync();
+                UserToEdit = allUsers.FirstOrDefault(u => u.Id == UserIdToEdit);
+
+                if (UserToEdit == null)
+                {
+                    Console.WriteLine($"User with ID {UserIdToEdit} not found");
+                }
+                else
+                {
+                    Console.WriteLine($"User loaded: {UserToEdit.FirstName} {UserToEdit.LastName}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenAsync()
+    {
+        await JS.InvokeVoidAsync("modalHelper.show", "addUserModal");
+    }
+
     private async Task Close()
     {
-        await JS.InvokeVoidAsync("eval", "bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide()");
+        await JS.InvokeVoidAsync("modalHelper.hide", "addUserModal");
+        UserToEdit = null;
+        IsEditMode = false;
+        IsLoading = false;
+        UserIdToEdit = null;
         await OnClose.InvokeAsync();
     }
 
     private async Task HandleUserCreated()
     {
         await Close();
+
+        // Show success message for user creation
+        if (notificationModal != null)
+        {
+            await notificationModal.ShowSuccessAsync("User has been successfully created.");
+        }
+
+        await OnUserOperationComplete.InvokeAsync();
+    }
+
+    private async Task HandleUserUpdated()
+    {
+        await Close();
+
+        // Show success message for user update
+        if (notificationModal != null)
+        {
+            await notificationModal.ShowSuccessAsync("User has been successfully updated.");
+        }
+
+        await OnUserOperationComplete.InvokeAsync();
+    }
+
+    private async Task HandleError(string errorMessage)
+    {
+        // Show error message
+        if (notificationModal != null)
+        {
+            await notificationModal.ShowErrorAsync(errorMessage);
+        }
     }
 }

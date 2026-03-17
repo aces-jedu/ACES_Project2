@@ -1,27 +1,3 @@
-﻿@inject IViewUsersUseCase ViewUsersUseCase
-
-<<<<<<< Updated upstream
-<table class="table">
-    <thead>
-        <tr
-            <th>First Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (users is not null && users.Count > 0)
-        {
-            @foreach (var user in users)
-            {
-                <UserListItemComponent _user="user"></UserListItemComponent>
-            }
-        }
-    </tbody>
-</table>
-=======
 <div class="container-fluid">
 
     <!-- FILTERS -->
@@ -202,17 +178,150 @@
 </div>
 
 <AddUserModal @ref="addUserModal" OnClose="RefreshUserList" />
->>>>>>> Stashed changes
+
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@inject IViewUsersUseCase ViewUsersUseCase
+@inject NavigationManager Navigation
+@inject IServiceScopeFactory ScopeFactory
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text"
+                       class="form-control"
+                       placeholder="Search by name or email..."
+                       @bind="searchTerm"
+                       @bind:event="oninput"
+                       @bind:after="DebounceSearch" />
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <button class="btn btn-outline-secondary"
+                            type="button"
+                            @onclick="ClearSearch">
+                        <i class="bi bi-x"></i>
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" @onchange="OnRoleFilterChange">
+                <option value="">All Roles</option>
+                @foreach (var role in availableRoles)
+                {
+                    <option value="@role">@role</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @onchange="OnStatusFilterChange">
+                <option value="">All Status</option>
+                <option value="1">Online</option>
+                <option value="0">Offline</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted">
+                        Showing @filteredUsers.Count of @totalUsers users
+                    </span>
+                </div>
+                <button class="btn btn-primary" @onclick="OpenModalForCreate">
+                    <i class="bi bi-person-plus"></i> Add User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th @onclick="@(() => SortBy("FirstName"))" style="cursor: pointer;">
+                        First Name
+                        @if (sortColumn == "FirstName")
+                        {
+                            <i class="bi bi-arrow-@(sortAscending ? "up" : "down")"></i>
+                        }
+                    </th>
+                    <th @onclick="@(() => SortBy("Email"))" style="cursor: pointer;">
+                        Email
+                        @if (sortColumn == "Email")
+                        {
+                            <i class="bi bi-arrow-@(sortAscending ? "up" : "down")"></i>
+                        }
+                    </th>
+                    <th @onclick="@(() => SortBy("RoleName"))" style="cursor: pointer;">
+                        Role
+                        @if (sortColumn == "RoleName")
+                        {
+                            <i class="bi bi-arrow-@(sortAscending ? "up" : "down")"></i>
+                        }
+                    </th>
+                    <th @onclick="@(() => SortBy("IsActive"))" style="cursor: pointer;">
+                        Status
+                        @if (sortColumn == "IsActive")
+                        {
+                            <i class="bi bi-arrow-@(sortAscending ? "up" : "down")"></i>
+                        }
+                    </th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (filteredUsers.Count > 0)
+                {
+                    @foreach (var user in filteredUsers)
+                    {
+                        <UserListItemComponent _user="user"
+                                               OnEditUser="OpenModalForEdit" />
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            @if (isSearching)
+                            {
+                                <span>Searching...</span>
+                            }
+                            else if (!string.IsNullOrEmpty(searchTerm) ||
+                            !string.IsNullOrEmpty(selectedRoleFilter) ||
+                            !string.IsNullOrEmpty(selectedStatusFilter))
+                            {
+                                <span>
+                                    No users found matching your filters.
+                                    <a href="#" @onclick="ClearAllFilters">Clear filters</a>
+                                </span>
+                            }
+                            else
+                            {
+                                <span>No users available.</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<AddUserModal @ref="addUserModal" OnClose="RefreshUserList" />
 
 @code {
-
     private List<ManageUsers>? users;
-<<<<<<< Updated upstream
-=======
     private List<ManageUsers> filteredUsers = new();
     private AddUserModal addUserModal;
     private HubConnection? hubConnection;
 
+    // Search and filter properties
     private string searchTerm = string.Empty;
     private string selectedRoleFilter = string.Empty;
     private string selectedStatusFilter = string.Empty;
@@ -220,9 +329,6 @@
     private bool sortAscending = true;
     private bool isSearching = false;
     private Timer? debounceTimer;
-
-    private List<string> availableRoles = new();
->>>>>>> Stashed changes
 
     // PAGINATION
     private int currentPage = 1;
@@ -234,15 +340,58 @@
             .Skip((currentPage - 1) * pageSize)
             .Take(pageSize)
             .ToList();
+      
+    private int totalUsers => users?.Count ?? 0;
+
+    // Available roles (you might want to fetch these from your service)
+    private List<string> availableRoles = new();
 
     protected override async Task OnInitializedAsync()
     {
-        users = (await ViewUsersUseCase.ExecuteAsync()).ToList();
+        await LoadUsers();
+        await LoadRoles();
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/userHub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On("UsersUpdated", async () =>
+        {
+            using var scope = ScopeFactory.CreateScope();
+            var viewUsersUseCase = scope.ServiceProvider.GetRequiredService<IViewUsersUseCase>();
+            var updatedUsers = (await viewUsersUseCase.ExecuteAsync()).ToList();
+
+            await InvokeAsync(() =>
+            {
+                users = updatedUsers;
+                ApplyFilters();
+                StateHasChanged();
+            });
+        });
+
+        await hubConnection.StartAsync();
     }
 
-<<<<<<< Updated upstream
-}
-=======
+    private async Task LoadUsers()
+    {
+        users = (await ViewUsersUseCase.ExecuteAsync()).ToList();
+        ApplyFilters();
+    }
+
+    private async Task LoadRoles()
+    {
+        // Extract unique roles from users
+        if (users != null)
+        {
+            availableRoles = users
+                .Select(u => u.RoleName)
+                .Where(r => !string.IsNullOrEmpty(r))
+                .Distinct()
+                .ToList();
+        }
+    }
+
     private async Task LoadRoles()
     {
         if (users != null)
@@ -261,78 +410,58 @@
 
         var query = users.AsEnumerable();
 
+        // Apply search filter
         if (!string.IsNullOrEmpty(searchTerm))
         {
             query = query.Where(u =>
                 u.FirstName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
-                u.Email?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true);
+                u.Email?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true
+            );
         }
 
+        // Apply role filter
         if (!string.IsNullOrEmpty(selectedRoleFilter))
+        {
             query = query.Where(u => u.RoleName == selectedRoleFilter);
+        }
 
+        // Apply status filter
         if (!string.IsNullOrEmpty(selectedStatusFilter))
         {
             var status = int.Parse(selectedStatusFilter);
             query = query.Where(u => u.IsActive == status);
         }
 
+        // Apply sorting
         query = sortColumn switch
         {
-            "FirstName" => sortAscending ? query.OrderBy(u => u.FirstName) : query.OrderByDescending(u => u.FirstName),
-            "Email" => sortAscending ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
-            "RoleName" => sortAscending ? query.OrderBy(u => u.RoleName) : query.OrderByDescending(u => u.RoleName),
-            "IsActive" => sortAscending ? query.OrderBy(u => u.IsActive) : query.OrderByDescending(u => u.IsActive),
+            "FirstName" => sortAscending
+                ? query.OrderBy(u => u.FirstName)
+                : query.OrderByDescending(u => u.FirstName),
+            "Email" => sortAscending
+                ? query.OrderBy(u => u.Email)
+                : query.OrderByDescending(u => u.Email),
+            "RoleName" => sortAscending
+                ? query.OrderBy(u => u.RoleName)
+                : query.OrderByDescending(u => u.RoleName),
+            "IsActive" => sortAscending
+                ? query.OrderBy(u => u.IsActive)
+                : query.OrderByDescending(u => u.IsActive),
             _ => query.OrderBy(u => u.FirstName)
         };
 
         filteredUsers = query.ToList();
-        currentPage = 1;
     }
-
-    private void SortBy(string column)
-    {
-        if (sortColumn == column)
-            sortAscending = !sortAscending;
-        else
-        {
-            sortColumn = column;
-            sortAscending = true;
-        }
-
-        ApplyFilters();
-    }
-
-    private void OnRoleFilterChange(ChangeEventArgs e)
-    {
-        selectedRoleFilter = e.Value?.ToString() ?? "";
-        ApplyFilters();
-    }
-
-    private void OnStatusFilterChange(ChangeEventArgs e)
-    {
-        selectedStatusFilter = e.Value?.ToString() ?? "";
-        ApplyFilters();
-    }
-
-    private void OnPageSizeChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int size))
-        {
-            pageSize = size;
-            currentPage = 1;
-        }
-    }
-
-    private void GoToPage(int page) => currentPage = page;
-    private void PreviousPage() { if (currentPage > 1) currentPage--; }
-    private void NextPage() { if (currentPage < totalPages) currentPage++; }
 
     private async Task DebounceSearch()
     {
         isSearching = true;
+        StateHasChanged();
 
-        debounceTimer?.Dispose();
+        if (debounceTimer != null)
+        {
+            await debounceTimer.DisposeAsync();
+        }
 
         debounceTimer = new Timer(_ =>
         {
@@ -342,6 +471,7 @@
                 isSearching = false;
                 StateHasChanged();
             });
+            debounceTimer?.DisposeAsync();
         }, null, 500, Timeout.Infinite);
     }
 
@@ -349,18 +479,73 @@
     {
         searchTerm = string.Empty;
         ApplyFilters();
+        StateHasChanged();
     }
 
-    private async Task OpenModalForCreate() =>
-        await addUserModal.OpenForCreateAsync();
+    private void OnRoleFilterChange(ChangeEventArgs e)
+    {
+        selectedRoleFilter = e.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+        StateHasChanged();
+    }
 
-    private async Task OpenModalForEdit(string userId) =>
+    private void OnStatusFilterChange(ChangeEventArgs e)
+    {
+        selectedStatusFilter = e.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void ClearAllFilters()
+    {
+        searchTerm = string.Empty;
+        selectedRoleFilter = string.Empty;
+        selectedStatusFilter = string.Empty;
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private async Task OpenModalForCreate()
+    {
+        await addUserModal.OpenForCreateAsync();
+    }
+
+    private async Task OpenModalForEdit(string userId)
+    {
         await addUserModal.OpenForEditAsync(userId);
+    }
 
     private async void RefreshUserList()
     {
         await LoadUsers();
         StateHasChanged();
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (debounceTimer != null)
+        {
+            await debounceTimer.DisposeAsync();
+        }
+
+        if (hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
 }
->>>>>>> Stashed changes
