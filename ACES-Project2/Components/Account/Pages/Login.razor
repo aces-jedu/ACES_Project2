@@ -21,16 +21,15 @@
 <div class="min-vh-100 d-flex align-items-center justify-content-center bg-light py-5">
     <div class="bg-white rounded-4 shadow-lg p-4 p-md-5" style="max-width: 480px; width: 100%;">
         <!-- Brand header from image -->
+        @* <div class="border-start border-4 border-primary ps-3 mb-4">
+            <span class="display-6 fw-semibold text-dark d-block lh-1">LOGO</span>
+            <span class="display-6 fw-bold text-primary d-block lh-1">HERE</span>
+        </div> *@
 
         <div class="mb-4 text-center">
             <img src="/images/aces-logo.jpg" alt="Company Logo"
                  class="img-fluid w-50" style="max-width: 200px;" />
         </div>
-
-        @* <div class="border-start border-4 border-primary ps-3 mb-4">
-            <span class="display-6 fw-semibold text-dark d-block lh-1">LOGO</span>
-            <span class="display-6 fw-bold text-primary d-block lh-1">HERE</span>
-        </div> *@
 
         <!-- Sign in / Sign up row -->
         <div class="d-flex justify-content-between align-items-center pb-2 mb-4 border-bottom">
@@ -43,6 +42,7 @@
         <section>
             <StatusMessage Message="@errorMessage" />
             <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
+
                 <DataAnnotationsValidator />
 
                 <!-- Email field -->
@@ -69,7 +69,7 @@
 
                 <!-- Log in now button -->
                 <div class="text-center mb-3">
-                    <button type="submit" class="btn btn-primary rounded-3 fw-semibold py-2 px-4" style="background: #0d6efd; letter-spacing: 0.3px; font-size: 0.9rem;">Log in</button>
+                    <button type="submit" class="btn btn-primary rounded-3 fw-semibold px-1 py-2" style="background: #0d6efd; letter-spacing: 0.3px; min-width: 150px;">Log in</button>
                 </div>
 
                 <!-- Forgot password link -->
@@ -127,12 +127,16 @@
     protected override async Task OnInitializedAsync()
     {
         Input ??= new();
-
         editContext = new EditContext(Input);
+
+        if (HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            NavigationManager.NavigateTo("/"); // or homepage
+            return;
+        }
 
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
-            // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
     }
