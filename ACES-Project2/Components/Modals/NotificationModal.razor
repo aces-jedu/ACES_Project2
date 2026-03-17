@@ -1,0 +1,68 @@
+﻿@* NotificationModal.razor *@
+<div class="modal fade" id="@ModalId" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <div class="@(Type == NotificationType.Success ? "success-icon" : "error-icon")">
+                        @if (Type == NotificationType.Success)
+                        {
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                        }
+                    </div>
+                </div>
+                <h4 class="mb-3 @(Type == NotificationType.Success ? "text-success" : "text-danger")">@Title</h4>
+                <p class="text-muted mb-4">@Message</p>
+                <button type="button" class="btn @(Type == NotificationType.Success ? "btn-success" : "btn-danger") px-4" @onclick="CloseModal">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Define the enum here
+    public enum NotificationType
+    {
+        Success,
+        Error
+    }
+
+    [Parameter] public string ModalId { get; set; } = "notificationModal";
+    [Parameter] public string Title { get; set; } = "Notification";
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public NotificationType Type { get; set; } = NotificationType.Success;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [Inject] private IJSRuntime JS { get; set; }
+
+    private async Task CloseModal()
+    {
+        await JS.InvokeVoidAsync("modalHelper.hide", ModalId);
+        await OnClose.InvokeAsync();
+    }
+
+    public async Task ShowAsync(string title, string message, NotificationType type)
+    {
+        Title = title;
+        Message = message;
+        Type = type;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("modalHelper.show", ModalId);
+    }
+
+    public async Task ShowSuccessAsync(string message)
+    {
+        await ShowAsync("Success!", message, NotificationType.Success);
+    }
+
+    public async Task ShowErrorAsync(string message)
+    {
+        await ShowAsync("Error!", message, NotificationType.Error);
+    }
+}

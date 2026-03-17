@@ -3,7 +3,13 @@
     <tr>
         <td>@_user.FirstName</td>
         <td>@_user.Email</td>
+<<<<<<< Updated upstream
         <td>@_user.RoleName</td>
+=======
+        <td>
+            <span class="badge bg-info text-dark">@_user.RoleName</span>
+        </td>
+>>>>>>> Stashed changes
         <td>
             <span class="badge @(_user.IsActive == 1 ? "bg-success" : "bg-secondary")">
                 @(_user.IsActive == 1 ? "Online" : "Offline")
