@@ -4,21 +4,14 @@
         <div class="modal-content">
             <div class="modal-body text-center p-4">
                 <div class="mb-3">
-                    <div class="@(Type == NotificationType.Success ? "success-animation" : "error-animation")">
+                    <div class="@(Type == NotificationType.Success ? "success-icon" : "error-icon")">
                         @if (Type == NotificationType.Success)
                         {
-                            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                                <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
-                                <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
-                            </svg>
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
                         }
                         else
                         {
-                            <svg class="checkmark error-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                                <circle class="checkmark__circle error-mark__circle" cx="26" cy="26" r="25" fill="none" />
-                                <path class="checkmark__check error-mark__line" fill="none" d="M16 16 L36 36" />
-                                <path class="checkmark__check error-mark__line" fill="none" d="M36 16 L16 36" />
-                            </svg>
+                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
                         }
                     </div>
                 </div>
